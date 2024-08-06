@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -59,7 +60,8 @@ public class UserController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable(value = "id") UUID id,
-                                        @RequestBody @JsonView(UserDto.UserView.UserPut.class) UserDto userDto) {
+                                        @RequestBody @Validated(UserDto.UserView.UserPut.class)
+                                        @JsonView(UserDto.UserView.UserPut.class) UserDto userDto) {
         Optional<UserModel> userModelOptional = userService.findById(id);
 
         if (userModelOptional.isEmpty()) {
@@ -79,7 +81,8 @@ public class UserController {
 
     @PutMapping("/{id}/password")
     public ResponseEntity<?> updatePassword(@PathVariable(value = "id") UUID id,
-                                            @RequestBody @JsonView(UserDto.UserView.PasswordPut.class) UserDto userDto) {
+                                            @RequestBody @Validated(UserDto.UserView.PasswordPut.class)
+                                            @JsonView(UserDto.UserView.PasswordPut.class) UserDto userDto) {
         Optional<UserModel> userModelOptional = userService.findById(id);
 
         if (userModelOptional.isEmpty()) {
@@ -102,7 +105,8 @@ public class UserController {
 
     @PutMapping("/{id}/image")
     public ResponseEntity<?> updateImage(@PathVariable(value = "id") UUID id,
-                                         @RequestBody @JsonView(UserDto.UserView.ImagePut.class) UserDto userDto) {
+                                         @RequestBody @Validated(UserDto.UserView.ImagePut.class)
+                                         @JsonView(UserDto.UserView.ImagePut.class) UserDto userDto) {
         Optional<UserModel> userModelOptional = userService.findById(id);
 
         if (userModelOptional.isEmpty()) {
