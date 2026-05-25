@@ -1,26 +1,28 @@
 package com.ead.authuser.services;
 
-import com.ead.authuser.models.UserModel;
+import com.ead.authuser.dtos.UserDTO;
+import com.ead.authuser.dtos.UserImageDTO;
+import com.ead.authuser.dtos.UserPasswordDTO;
+import com.ead.authuser.dtos.UserRegisterDTO;
+import com.ead.authuser.dtos.UserUpdateDTO;
+import com.ead.authuser.specifications.UserFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface UserService {
-    List<UserModel> findAll();
+    UserDTO getUser(UUID id);
 
-    Optional<UserModel> findById(UUID id);
+    void deleteUser(UUID id);
 
-    void delete(UserModel userModel);
+    UserDTO updateUser(UUID id, UserUpdateDTO userUpdateDTO);
 
-    void save(UserModel userModel);
+    void updateUserPassword(UUID id, UserPasswordDTO userPasswordDTO);
 
-    boolean existsByUsername(String username);
+    void updateImage(UUID id, UserImageDTO userImageDTO);
 
-    boolean existsByEmail(String email);
+    UserDTO registerUser(UserRegisterDTO userRegisterDTO);
 
-    Page<UserModel> findAll(Specification<UserModel> spec, Pageable pageable);
+    Page<UserDTO> findAll(UserFilter userFilter, Pageable pageable);
 }

@@ -14,5 +14,8 @@ public class UsernameConstraintImpl implements ConstraintValidator<UsernameConst
         // implement your customized constraint here
         // in this example, it is similar to @NotBlank annotation
         return username != null && !username.trim().isEmpty() && !username.contains(" ");
+
+        // other good idea is call exits from repository
+        // return !repository.existsByUsername(username);
     }
 }

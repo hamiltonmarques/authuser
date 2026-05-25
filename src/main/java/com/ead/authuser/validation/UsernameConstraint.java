@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface UsernameConstraint {
-    String message() default "Error: invalid username";
+    String message() default "Invalid whitespace characters";
 
     Class<?>[] groups() default {};
 

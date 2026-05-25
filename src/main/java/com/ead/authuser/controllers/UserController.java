@@ -1,16 +1,17 @@
 package com.ead.authuser.controllers;
 
-import com.ead.authuser.dtos.UserDto;
-import com.ead.authuser.models.UserModel;
+import com.ead.authuser.dtos.ResponseDTO;
+import com.ead.authuser.dtos.UserDTO;
+import com.ead.authuser.dtos.UserImageDTO;
+import com.ead.authuser.dtos.UserPasswordDTO;
+import com.ead.authuser.dtos.UserUpdateDTO;
 import com.ead.authuser.services.UserService;
-import com.ead.authuser.specifications.SpecificationTemplate;
-import com.fasterxml.jackson.annotation.JsonView;
+import com.ead.authuser.specifications.UserFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -22,9 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -39,102 +37,46 @@ public class UserController {
     UserService userService;
 
     @GetMapping
-    public ResponseEntity<Page<UserModel>> getUsers(SpecificationTemplate.UserSpec spec,
-                                                    @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
-        Page<UserModel> userModelPage = userService.findAll(spec, pageable);
+    public ResponseEntity<?> getUsers(UserFilter userFilter,
+                                      @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
+        Page<UserDTO> userDTOPage = userService.findAll(userFilter, pageable);
 
-        if (!userModelPage.isEmpty()) {
-            for (UserModel userModel : userModelPage.toList()) {
-                userModel.add(linkTo(methodOn(UserController.class).getUser(userModel.getId())).withSelfRel());
-            }
-        }
+        userDTOPage.forEach(userDTO ->
+                userDTO.add(linkTo(methodOn(UserController.class)
+                        .getUser(userDTO.getId()))
+                        .withSelfRel())
+        );
 
-        return ResponseEntity.status(HttpStatus.OK).body(userModelPage);
+        return ResponseDTO.ok("Users listed successfully", userDTOPage);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getUser(@PathVariable(value = "id") UUID id) {
-        Optional<UserModel> userModelOptional = userService.findById(id);
-        if (userModelOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
-
-        return ResponseEntity.status(HttpStatus.OK).body(userModelOptional.get());
+        UserDTO userDTO = userService.getUser(id);
+        return ResponseDTO.ok("User found successfully", userDTO);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable(value = "id") UUID id) {
-        Optional<UserModel> userModelOptional = userService.findById(id);
-
-        if (userModelOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
-
-        userService.delete(userModelOptional.get());
-        return ResponseEntity.status(HttpStatus.OK).body("User deleted successfully");
+        userService.deleteUser(id);
+        return ResponseDTO.ok("User deleted successfully", id);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable(value = "id") UUID id,
-                                        @RequestBody @Validated(UserDto.UserView.UserPut.class)
-                                        @JsonView(UserDto.UserView.UserPut.class) UserDto userDto) {
-        Optional<UserModel> userModelOptional = userService.findById(id);
-
-        if (userModelOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
-
-        UserModel userModel = userModelOptional.get();
-        userModel.setFullName(userDto.getFullName());
-        userModel.setPhoneNumber(userDto.getPhoneNumber());
-        userModel.setCpf(userDto.getCpf());
-        userModel.setUpdatedAt(LocalDateTime.now(ZoneId.of("UTC")));
-
-        userService.save(userModel);
-
-        return ResponseEntity.status(HttpStatus.OK).body(userModel);
+    public ResponseEntity<?> updateUser(@PathVariable(value = "id") UUID id, @RequestBody @Validated UserUpdateDTO userUpdateDTO) {
+        UserDTO userDTO = userService.updateUser(id, userUpdateDTO);
+        return ResponseDTO.ok("User updated successfully", userDTO);
     }
 
     @PutMapping("/{id}/password")
-    public ResponseEntity<?> updatePassword(@PathVariable(value = "id") UUID id,
-                                            @RequestBody @Validated(UserDto.UserView.PasswordPut.class)
-                                            @JsonView(UserDto.UserView.PasswordPut.class) UserDto userDto) {
-        Optional<UserModel> userModelOptional = userService.findById(id);
-
-        if (userModelOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
-
-        UserModel userModel = userModelOptional.get();
-
-        if (!userModel.getPassword().equals(userDto.getOldPassword())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Conflict: mismatched old password");
-        }
-
-        userModel.setPassword(userDto.getPassword());
-        userModel.setUpdatedAt(LocalDateTime.now(ZoneId.of("UTC")));
-
-        userService.save(userModel);
-
-        return ResponseEntity.status(HttpStatus.OK).body("Password updated successfully");
+    public ResponseEntity<?> updatePassword(@PathVariable(value = "id") UUID id, @RequestBody @Validated UserPasswordDTO userPasswordDTO) {
+        userService.updateUserPassword(id, userPasswordDTO);
+        return ResponseDTO.ok("Password updated successfully", id);
     }
 
     @PutMapping("/{id}/image")
-    public ResponseEntity<?> updateImage(@PathVariable(value = "id") UUID id,
-                                         @RequestBody @Validated(UserDto.UserView.ImagePut.class)
-                                         @JsonView(UserDto.UserView.ImagePut.class) UserDto userDto) {
-        Optional<UserModel> userModelOptional = userService.findById(id);
-
-        if (userModelOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
-
-        UserModel userModel = userModelOptional.get();
-        userModel.setImageUrl(userDto.getImageUrl());
-        userModel.setUpdatedAt(LocalDateTime.now(ZoneId.of("UTC")));
-
-        userService.save(userModel);
-
-        return ResponseEntity.status(HttpStatus.OK).body(userModel);
+    public ResponseEntity<?> updateImage(@PathVariable(value = "id") UUID id, @RequestBody @Validated UserImageDTO userImageDTO) {
+        userService.updateImage(id, userImageDTO);
+        return ResponseDTO.ok("Image updated successfully", id);
     }
 }
