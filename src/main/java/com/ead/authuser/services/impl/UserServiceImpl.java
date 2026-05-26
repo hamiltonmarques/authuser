@@ -1,5 +1,8 @@
 package com.ead.authuser.services.impl;
 
+import com.ead.authuser.api.response.PageResponse;
+import com.ead.authuser.controllers.UserController;
+import com.ead.authuser.dtos.PageDTO;
 import com.ead.authuser.dtos.UserDTO;
 import com.ead.authuser.dtos.UserImageDTO;
 import com.ead.authuser.dtos.UserPasswordDTO;
@@ -22,6 +25,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -90,10 +96,28 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Page<UserDTO> findAll(UserFilter userFilter, Pageable pageable) {
+    public PageResponse<UserDTO> findAll(UserFilter userFilter, Pageable pageable) {
         Specification<UserModel> spec = UserSpecification.byFilter(userFilter);
-        return userRepository.findAll(spec, pageable)
+        Page<UserDTO> userDTOPage = userRepository.findAll(spec, pageable)
                 .map(userMapper::toDTO);
+
+        userDTOPage.forEach(userDTO ->
+                userDTO.add(linkTo(methodOn(UserController.class)
+                        .getUser(userDTO.getId()))
+                        .withSelfRel())
+        );
+
+        return new PageResponse<>(
+                userDTOPage.getContent(),
+                new PageDTO(
+                        userDTOPage.getNumber(),
+                        userDTOPage.getSize(),
+                        userDTOPage.getTotalElements(),
+                        userDTOPage.getTotalPages(),
+                        userDTOPage.hasNext(),
+                        userDTOPage.hasPrevious()
+                )
+        );
     }
 
     private UserModel findUser(UUID id) {

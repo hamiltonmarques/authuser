@@ -1,5 +1,6 @@
 package com.ead.authuser.controllers;
 
+import com.ead.authuser.api.response.PageResponse;
 import com.ead.authuser.dtos.ResponseDTO;
 import com.ead.authuser.dtos.UserDTO;
 import com.ead.authuser.dtos.UserImageDTO;
@@ -8,7 +9,6 @@ import com.ead.authuser.dtos.UserUpdateDTO;
 import com.ead.authuser.services.UserService;
 import com.ead.authuser.specifications.UserFilter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -25,9 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/users")
@@ -37,17 +34,9 @@ public class UserController {
     UserService userService;
 
     @GetMapping
-    public ResponseEntity<?> getUsers(UserFilter userFilter,
-                                      @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
-        Page<UserDTO> userDTOPage = userService.findAll(userFilter, pageable);
-
-        userDTOPage.forEach(userDTO ->
-                userDTO.add(linkTo(methodOn(UserController.class)
-                        .getUser(userDTO.getId()))
-                        .withSelfRel())
-        );
-
-        return ResponseDTO.ok("Users listed successfully", userDTOPage);
+    public ResponseEntity<?> getUsers(UserFilter userFilter, @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
+        PageResponse<UserDTO> pageResponse = userService.findAll(userFilter, pageable);
+        return ResponseDTO.ok("Users listed successfully", pageResponse);
     }
 
     @GetMapping("/{id}")
