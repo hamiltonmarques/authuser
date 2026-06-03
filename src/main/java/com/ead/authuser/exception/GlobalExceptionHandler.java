@@ -5,16 +5,19 @@ import com.ead.authuser.exception.notfound.NotFoundException;
 import com.ead.authuser.exception.password.PasswordException;
 import com.ead.authuser.exception.validation.AlreadyExistsException;
 import com.ead.authuser.validation.ValidationMessage;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,7 +40,13 @@ public class GlobalExceptionHandler {
         return ResponseDTO.conflictError(ex.getMessage());
     }
 
-    // Handles when bean validation fails. Ex.: @NotBlank, @Min(18), @Email, @Size
+    @ExceptionHandler(MissingPathVariableException.class)
+    public ResponseEntity<?> handleMissingPathVariable(MissingPathVariableException ex) {
+        Map<String, String> errors = Collections.singletonMap(ex.getVariableName(), "variable is required");
+        return ResponseDTO.validationError("Path error", errors);
+    }
+
+    // Handles Bean validation (@NotBlank, @Min, etc.) in @RequestBody
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -52,8 +61,7 @@ public class GlobalExceptionHandler {
         return ResponseDTO.validationError("Field error", errors);
     }
 
-    // Handles when field type fails in Objects
-    // Ex.: UserFilter filter, UserRequest request, UserDTO dto
+    // Handles in complex Objects (AnyFilter filter, AnyDTO dto, etc.)
     @ExceptionHandler(BindException.class)
     public ResponseEntity<?> handleBindException(BindException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -74,40 +82,61 @@ public class GlobalExceptionHandler {
         return ResponseDTO.validationError("Field error", errors);
     }
 
-    // Handles when field type fails in Arguments
-    // Ex.: @RequestParam UserStatusEnum status, @PathVariable UUID id, @RequestParam Integer age
+    // Handles in Arguments (@RequestParam, @PathVariable, etc.)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         Class<?> requiredType = ex.getRequiredType();
         String message = ValidationMessage.getInvalid(requiredType, ex.getValue());
 
-        Map<String, String> errors = Map.of(ex.getName(), message);
+        Map<String, String> errors = Collections.singletonMap(ex.getName(), message);
 
         return ResponseDTO.validationError("Field error", errors);
     }
 
-    // Handles when field type or JSON format is invalid in @RequestBody
+    // Handles field type or JSON format
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<?> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
-        Throwable cause = ex.getCause();
+        Throwable cause = ex.getMostSpecificCause();
 
-        if (cause instanceof InvalidFormatException) {
-            InvalidFormatException invalidFormat = (InvalidFormatException) cause;
+        if (cause instanceof MismatchedInputException) {
+            MismatchedInputException mie = (MismatchedInputException) cause;
 
-            String fieldName = invalidFormat.getPath()
-                    .stream()
-                    .map(JsonMappingException.Reference::getFieldName)
-                    .collect(Collectors.joining("."));
+            String fieldName = extractFieldName(mie);
+            Class<?> targetType = mie.getTargetType();
 
-            Class<?> targetType = invalidFormat.getTargetType();
-            String message = ValidationMessage.getInvalid(targetType, invalidFormat.getValue());
+            Object rejectedValue = extractRejectedValue(mie);
+            String message = ValidationMessage.getInvalid(targetType, rejectedValue);
 
-            Map<String, String> errors = new HashMap<>();
-            errors.put(fieldName, message);
-            return ResponseDTO.validationError("Field error", errors);
+            return ResponseDTO.validationError("Field error", Collections.singletonMap(fieldName, message));
         }
 
         return ResponseDTO.badRequest("Malformed JSON");
+    }
+
+    private Object extractRejectedValue(MismatchedInputException ex) {
+        if (ex instanceof InvalidFormatException) {
+            return ((InvalidFormatException) ex).getValue();
+        }
+
+        if (ex.getProcessor() instanceof JsonParser) {
+            try {
+                return ((JsonParser) ex.getProcessor()).getText();
+            } catch (Exception e) {
+                return "invalid format";
+            }
+        }
+
+        return "invalid format";
+    }
+
+    private String extractFieldName(MismatchedInputException ex) {
+        if (ex.getPath() == null || ex.getPath().isEmpty()) {
+            return "payload";
+        }
+        return ex.getPath().stream()
+                .map(ref -> ref.getFieldName() != null ? ref.getFieldName() : "[" + ref.getIndex() + "]")
+                .collect(Collectors.joining("."))
+                .replace(".[", "[");
     }
 
     @ExceptionHandler(Exception.class)
@@ -116,6 +145,7 @@ public class GlobalExceptionHandler {
         // always return a generic message for client
         // enable logs in production only
         // log.error("unexpected internal error", ex);
+        System.out.println(ex.getClass().getName());
         System.out.println(ex.getMessage());
 
         return ResponseDTO.internalError("Unexpected internal error");

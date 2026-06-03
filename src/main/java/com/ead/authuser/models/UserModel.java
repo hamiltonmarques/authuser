@@ -2,7 +2,6 @@ package com.ead.authuser.models;
 
 import com.ead.authuser.enums.UserStatus;
 import com.ead.authuser.enums.UserType;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -37,7 +36,6 @@ public class UserModel implements Serializable {
     private String email;
 
     @Column(nullable = false, length = 255)
-    @JsonIgnore
     private String password;
 
     @Column(nullable = false, length = 150)

@@ -34,7 +34,8 @@ public class UserController {
     UserService userService;
 
     @GetMapping
-    public ResponseEntity<?> getUsers(UserFilter userFilter, @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
+    public ResponseEntity<?> getUsers(UserFilter userFilter,
+                                      @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
         PageResponse<UserDTO> pageResponse = userService.findAll(userFilter, pageable);
         return ResponseDTO.ok("Users listed successfully", pageResponse);
     }

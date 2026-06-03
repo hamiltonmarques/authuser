@@ -54,7 +54,7 @@ public class UserServiceImpl implements UserService {
     public UserDTO updateUser(UUID id, UserUpdateDTO userUpdateDTO) {
         UserModel userModel = findUser(id);
 
-        userMapper.updateFromUpdateDTO(userUpdateDTO, userModel);
+        userMapper.updateModel(userUpdateDTO, userModel);
         userRepository.save(userModel);
 
         return userMapper.toDTO(userModel);
