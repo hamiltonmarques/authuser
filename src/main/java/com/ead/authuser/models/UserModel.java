@@ -52,7 +52,7 @@ public class UserModel implements Serializable {
     @Column(length = 20)
     private String phoneNumber;
 
-    @Column(length = 20)
+    @Column(unique = true, length = 20)
     private String cpf;
 
     @Column
