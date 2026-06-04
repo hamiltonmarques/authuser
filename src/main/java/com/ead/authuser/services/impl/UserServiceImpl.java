@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO getUser(UUID id) {
         UserModel userModel = findUser(id);
-        return userMapper.toDTO(userModel);
+        return getUserDTO(userModel);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
         userMapper.updateModel(userUpdateDTO, userModel);
         userRepository.save(userModel);
 
-        return userMapper.toDTO(userModel);
+        return getUserDTO(userModel);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class UserServiceImpl implements UserService {
         UserModel userModel = userMapper.toModel(userRegisterDTO);
         userRepository.save(userModel);
 
-        return userMapper.toDTO(userModel);
+        return getUserDTO(userModel);
     }
 
     @Override
@@ -123,5 +123,13 @@ public class UserServiceImpl implements UserService {
     private UserModel findUser(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(UserNotFoundException::new);
+    }
+
+    private UserDTO getUserDTO(UserModel userModel) {
+        UserDTO userDTO = userMapper.toDTO(userModel);
+        userDTO.add(linkTo(methodOn(UserController.class)
+                .getUser(userModel.getId()))
+                .withSelfRel());
+        return userDTO;
     }
 }
