@@ -4,18 +4,23 @@ import com.ead.authuser.enums.UserStatus;
 import com.ead.authuser.enums.UserType;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -57,6 +62,10 @@ public class UserModel implements Serializable {
 
     @Column
     private String imageUrl;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @Fetch(FetchMode.SUBSELECT)
+    private Set<UserCourseModel> userCourses;
 
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
