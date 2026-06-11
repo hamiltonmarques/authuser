@@ -2,8 +2,12 @@ package com.ead.authuser.specifications;
 
 import com.ead.authuser.enums.UserStatus;
 import com.ead.authuser.enums.UserType;
+import com.ead.authuser.models.UserCourseModel;
 import com.ead.authuser.models.UserModel;
 import org.springframework.data.jpa.domain.Specification;
+
+import javax.persistence.criteria.Join;
+import java.util.UUID;
 
 public class UserSpecification {
 
@@ -20,6 +24,10 @@ public class UserSpecification {
 
         if (filter.getEmail() != null && !filter.getEmail().isBlank()) {
             spec = spec.and(emailLike(filter.getEmail()));
+        }
+
+        if (filter.getCourseId() != null) {
+            spec = spec.and(hasCourseId(filter.getCourseId()));
         }
 
         return spec;
@@ -41,5 +49,13 @@ public class UserSpecification {
                         cb.lower(root.get("email")),
                         "%" + email.toLowerCase() + "%"
                 );
+    }
+
+    public static Specification<UserModel> hasCourseId(UUID id) {
+        return (root, query, cb) -> {
+            query.distinct(true);
+            Join<UserModel, UserCourseModel> join = root.join("userCourses");
+            return cb.equal(join.get("courseId"), id);
+        };
     }
 }
