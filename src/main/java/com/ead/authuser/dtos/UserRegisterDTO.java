@@ -1,5 +1,6 @@
 package com.ead.authuser.dtos;
 
+import com.ead.authuser.enums.UserType;
 import com.ead.authuser.validation.UsernameConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import lombok.Setter;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Getter
@@ -31,4 +33,6 @@ public class UserRegisterDTO {
     private String phoneNumber;
     @NotBlank
     private String cpf;
+    @NotNull
+    private UserType type;
 }

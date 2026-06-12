@@ -18,7 +18,7 @@ public interface UserMapper {
     UserDTO toDTO(UserModel userModel);
 
     @Mapping(target = "status", expression = "java(UserStatus.ACTIVE)")
-    @Mapping(target = "type", expression = "java(UserType.STUDENT)")
+    //@Mapping(target = "type", expression = "java(UserType.STUDENT)") added in UserRegisterDTO
     UserModel toModel(UserRegisterDTO userRegisterDTO);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
