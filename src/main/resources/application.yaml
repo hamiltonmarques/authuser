@@ -11,10 +11,10 @@ spring:
     hibernate:
       ddl-auto: validate
 
-    properties:
-      hibernate:
-        show_sql: true
-        format_sql: true
+#    properties:
+#      hibernate:
+#        show_sql: true
+#        format_sql: true
 
   flyway:
     enabled: true
@@ -27,4 +27,5 @@ spring:
 app:
   clients:
     course-api:
+      label: COURSE-API
       base-url: http://localhost:8082

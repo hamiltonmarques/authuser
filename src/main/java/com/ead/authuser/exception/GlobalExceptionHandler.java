@@ -8,6 +8,7 @@ import com.ead.authuser.validation.ValidationMessage;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -22,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -44,6 +46,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleMissingPathVariable(MissingPathVariableException ex) {
         Map<String, String> errors = Collections.singletonMap(ex.getVariableName(), "variable is required");
         return ResponseDTO.validationError("Path error", errors);
+    }
+
+    @ExceptionHandler(ExternalApiException.class)
+    public ResponseEntity<?> handleExternalApi(ExternalApiException ex) {
+        log.error("ExternalApiException Origin: {}, Status: {}, Message: {}",
+                ex.getOriginApi(), ex.getHttpStatus(), ex.getMessage());
+        return ResponseEntity.status(ex.getHttpStatus()).body(ex.getApiResponse());
+    }
+
+    @ExceptionHandler(ExternalApiUnavailableException.class)
+    public ResponseEntity<?> handleExternalApiUnavailable(ExternalApiUnavailableException ex) {
+        log.error(ex.getMessage(), ex.getCause());
+        return ResponseDTO.serviceUnavailable(ex.getMessage());
     }
 
     // Handles Bean validation (@NotBlank, @Min, etc.) in @RequestBody
@@ -145,8 +160,8 @@ public class GlobalExceptionHandler {
         // always return a generic message for client
         // enable logs in production only
         // log.error("unexpected internal error", ex);
-        System.out.println(ex.getClass().getName());
-        System.out.println(ex.getMessage());
+        log.error(ex.getClass().getName());
+        log.error(ex.getMessage());
 
         return ResponseDTO.internalError("Unexpected internal error");
     }

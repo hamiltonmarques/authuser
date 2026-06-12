@@ -6,6 +6,8 @@ import com.ead.authuser.dtos.CourseDTO;
 import com.ead.authuser.exception.ExternalApiException;
 import com.ead.authuser.specifications.CourseFilter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -14,32 +16,39 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 
 import java.net.URI;
+import java.util.Objects;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class CourseApiClient {
 
     private final WebClient courseWebClient;
 
+    @Value("${app.clients.course-api.label}")
+    String apiLabel;
+
     public PageResponse<CourseDTO> getCourses(CourseFilter filter, Pageable pageable) {
-        ApiResponse<PageResponse<CourseDTO>> response =
+        log.info("getting courses from {}...", apiLabel);
+        ApiResponse<PageResponse<CourseDTO>> apiResponse =
                 courseWebClient
                         .get()
                         .uri(uriBuilder -> buildUri(uriBuilder, filter, pageable))
                         .retrieve()
                         .onStatus(HttpStatus::isError,
-                                clientResponse -> clientResponse
-                                        .bodyToMono(String.class)
-                                        .map(ExternalApiException::new))
+                                response -> response
+                                        .bodyToMono(new ParameterizedTypeReference<ApiResponse<Object>>() {
+                                        })
+                                        .map(error -> new ExternalApiException(
+                                                apiLabel,
+                                                response.statusCode(),
+                                                error))
+                        )
                         .bodyToMono(new ParameterizedTypeReference<ApiResponse<PageResponse<CourseDTO>>>() {
                         })
                         .block();
 
-        if (response == null) {
-            throw new ExternalApiException("Course API returned an empty response");
-        }
-
-        return response.getData();
+        return Objects.requireNonNull(apiResponse).getData();
     }
 
     private URI buildUri(UriBuilder uriBuilder, CourseFilter filter, Pageable pageable) {
