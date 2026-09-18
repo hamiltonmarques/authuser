@@ -1,6 +1,7 @@
 package com.ead.authuser.controllers;
 
 import com.ead.authuser.dtos.ResponseDTO;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.boot.web.servlet.error.ErrorController;
@@ -15,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
+@Hidden
 @RestController
 public class CustomErrorController implements ErrorController {
 
